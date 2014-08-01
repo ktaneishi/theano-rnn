@@ -1,6 +1,7 @@
 import numpy
 import theano
 import theano.tensor as TT
+import scipy.io
 
 # number of hidden units
 n = 50
@@ -18,11 +19,11 @@ h0 = TT.vector()
 # learning rate
 lr = TT.scalar()
 # recurrent weights as a shared variable
-W = theano.shared(numpy.random.uniform(size=(n, n), low=-.01, high=.01))
+W = theano.shared(numpy.random.uniform(size=(n, n), low=-.01, high=.01).astype(theano.config.floatX))
 # input to hidden layer weights
-W_in = theano.shared(numpy.random.uniform(size=(nin, n), low=-.01, high=.01))
+W_in = theano.shared(numpy.random.uniform(size=(nin, n), low=-.01, high=.01).astype(theano.config.floatX))
 # hidden to output layer weights
-W_out = theano.shared(numpy.random.uniform(size=(n, nout), low=-.01, high=.01))
+W_out = theano.shared(numpy.random.uniform(size=(n, nout), low=-.01, high=.01).astype(theano.config.floatX))
 
 
 # recurrent function (using tanh activation function) and linear output
@@ -49,3 +50,5 @@ fn = theano.function([h0, u, t, lr],
                      updates={W: W - lr * gW,
                              W_in: W_in - lr * gW_in,
                              W_out: W_out - lr * gW_out})
+
+scipy.io.savemat('basic', { 'W':W.get_value(), 'W_in':W_in.get_value(), 'W_out':W_out.get_value() }, do_compression=True)
