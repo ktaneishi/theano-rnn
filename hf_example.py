@@ -10,6 +10,7 @@ https://github.com/boulanni/theano-hf
 """
 from rnn import MetaRNN
 from hf import SequenceDataset, hf_optimizer
+import theano
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
@@ -53,7 +54,6 @@ def test_real(n_updates=100):
 
     opt.train(gradient_dataset, cg_dataset, num_updates=n_updates)
 
-    plt.close('all')
     fig = plt.figure()
     ax1 = plt.subplot(211)
     plt.plot(seq[0])
@@ -119,7 +119,6 @@ def test_binary(multiple_out=False, n_updates=250):
 
     seqs = xrange(10)
 
-    plt.close('all')
     for seq_num in seqs:
         fig = plt.figure()
         ax1 = plt.subplot(211)
@@ -148,7 +147,7 @@ def test_softmax(n_updates=250):
 
     np.random.seed(0)
     # simple lag test
-    seq = np.random.randn(n_seq, n_steps, n_in)
+    seq = np.random.randn(n_seq, n_steps, n_in).astype(theano.config.floatX)
     targets = np.zeros((n_seq, n_steps), dtype='int32')
 
     thresh = 0.5
@@ -189,7 +188,6 @@ def test_softmax(n_updates=250):
 
     seqs = xrange(10)
 
-    plt.close('all')
     for seq_num in seqs:
         fig = plt.figure()
         ax1 = plt.subplot(211)
@@ -206,6 +204,7 @@ def test_softmax(n_updates=250):
                                    cmap='gray')
         ax2.set_title('blue: true class, grayscale: probs assigned by model')
 
+        plt.savefig('result%02d.png' % seq_num)
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
