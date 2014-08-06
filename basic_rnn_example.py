@@ -51,4 +51,4 @@ fn = theano.function([h0, u, t, lr],
                              W_in: W_in - lr * gW_in,
                              W_out: W_out - lr * gW_out})
 
-scipy.io.savemat('basic', { 'W':W.get_value(), 'W_in':W_in.get_value(), 'W_out':W_out.get_value() }, do_compression=True)
+scipy.io.savemat('weights', { 'W':W.get_value(), 'W_in':W_in.get_value(), 'W_out':W_out.get_value() }, do_compression=True)
