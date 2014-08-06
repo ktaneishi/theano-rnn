@@ -5,7 +5,7 @@
 import numpy as np
 import theano
 import theano.tensor as T
-from sklearn.base import BaseEstimator
+from base import BaseEstimator # from sklearn
 import logging
 import time
 import os
@@ -15,7 +15,6 @@ import cPickle as pickle
 logger = logging.getLogger(__name__)
 
 import matplotlib.pyplot as plt
-plt.ion()
 
 mode = theano.Mode(linker='cvm')
 #mode = 'DEBUG_MODE'
@@ -178,7 +177,7 @@ class RNN(object):
                 raise NotImplementedError()
 
 
-class MetaRNN(BaseEstimator):
+class MetaRNN(object):
     def __init__(self, n_in=5, n_hidden=50, n_out=5, learning_rate=0.01,
                  n_epochs=100, L1_reg=0.00, L2_reg=0.00, learning_rate_decay=1,
                  activation='tanh', output_type='real',
@@ -460,12 +459,14 @@ def test_real():
 
     np.random.seed(0)
     # simple lag test
-    seq = np.random.randn(n_seq, n_steps, n_in)
+    seq = np.random.randn(n_seq, n_steps, n_in).astype(theano.config.floatX)
     targets = np.zeros((n_seq, n_steps, n_out))
 
-    targets[:, 1:, 0] = seq[:, :-1, 3]  # delayed 1
-    targets[:, 1:, 1] = seq[:, :-1, 2]  # delayed 1
-    targets[:, 2:, 2] = seq[:, :-2, 0]  # delayed 2
+    # delay targets
+    delay = [1,1,2]
+    targets[:, delay[0]:, 0] = seq[:, :-delay[0], 3]  # delayed 1
+    targets[:, delay[1]:, 1] = seq[:, :-delay[1], 2]  # delayed 1
+    targets[:, delay[2]:, 2] = seq[:, :-delay[2], 0]  # delayed 2
 
     targets += 0.01 * np.random.standard_normal(targets.shape)
 
@@ -475,7 +476,6 @@ def test_real():
 
     model.fit(seq, targets, validation_frequency=1000)
 
-    plt.close('all')
     fig = plt.figure()
     ax1 = plt.subplot(211)
     plt.plot(seq[0])
@@ -488,8 +488,12 @@ def test_real():
     guessed_targets = plt.plot(guess, linestyle='--')
     for i, x in enumerate(guessed_targets):
         x.set_color(true_targets[i].get_color())
+        x.set_label('delayed %d' % delay[i])
     ax2.set_title('solid: true output, dashed: model output')
+    ax2.legend(fontsize=10,framealpha=0.5)
 
+    plt.tight_layout()
+    plt.savefig('result.png')
 
 def test_binary(multiple_out=False, n_epochs=250):
     """ Test RNN with binary outputs. """
@@ -504,7 +508,7 @@ def test_binary(multiple_out=False, n_epochs=250):
 
     np.random.seed(0)
     # simple lag test
-    seq = np.random.randn(n_seq, n_steps, n_in)
+    seq = np.random.randn(n_seq, n_steps, n_in).astype(theano.config.floatX)
     targets = np.zeros((n_seq, n_steps, n_out))
 
     # whether lag 1 (dim 3) is greater than lag 2 (dim 0)
@@ -524,7 +528,6 @@ def test_binary(multiple_out=False, n_epochs=250):
 
     seqs = xrange(10)
 
-    plt.close('all')
     for seq_num in seqs:
         fig = plt.figure()
         ax1 = plt.subplot(211)
@@ -540,6 +543,8 @@ def test_binary(multiple_out=False, n_epochs=250):
             x.set_color(true_targets[i].get_color())
         ax2.set_ylim((-0.1, 1.1))
         ax2.set_title('solid: true output, dashed: model output (prob)')
+
+        plt.savefig('result%02d.png' % seq_num)
 
 
 def test_softmax(n_epochs=250):
@@ -576,7 +581,6 @@ def test_softmax(n_epochs=250):
 
     seqs = xrange(10)
 
-    plt.close('all')
     for seq_num in seqs:
         fig = plt.figure()
         ax1 = plt.subplot(211)
