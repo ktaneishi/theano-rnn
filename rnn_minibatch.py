@@ -6,7 +6,7 @@ Parallelizes scan over sequences by using mini-batches.
 import numpy as np
 import theano
 import theano.tensor as T
-from sklearn.base import BaseEstimator
+from base import BaseEstimator # from sklearn
 import logging
 import time
 import os
@@ -16,7 +16,6 @@ import cPickle as pickle
 logger = logging.getLogger(__name__)
 
 import matplotlib.pyplot as plt
-plt.ion()
 
 mode = theano.Mode(linker='cvm')
 #mode = 'DEBUG_MODE'
@@ -651,7 +650,7 @@ class MetaRNN(BaseEstimator):
             # creates a function that computes the average cost on the training
             # set
             def train_fn(theta_value):
-                self.rnn.theta.set_value(theta_value, borrow=True)
+                self.rnn.theta.set_value(theta_value.astype(theano.config.floatX), borrow=True)
                 train_losses = [batch_cost(i, n_train)
                                 for i in xrange(n_train_batches)]
                 train_batch_sizes = [get_batch_size(i, n_train)
@@ -661,7 +660,7 @@ class MetaRNN(BaseEstimator):
             # creates a function that computes the average gradient of cost
             # with respect to theta
             def train_fn_grad(theta_value):
-                self.rnn.theta.set_value(theta_value, borrow=True)
+                self.rnn.theta.set_value(theta_value.astype(theano.config.floatX), borrow=True)
 
                 train_grads = [batch_grad(i, n_train)
                                 for i in xrange(n_train_batches)]
@@ -675,7 +674,7 @@ class MetaRNN(BaseEstimator):
             def callback(theta_value):
                 self.epoch += 1
                 if (self.epoch) % validate_every == 0:
-                    self.rnn.theta.set_value(theta_value, borrow=True)
+                    self.rnn.theta.set_value(theta_value.astype(theano.config.floatX), borrow=True)
                     # compute loss on training set
                     train_losses = [compute_train_error(i, n_train)
                                     for i in xrange(n_train_batches)]
@@ -793,12 +792,13 @@ def test_real(n_epochs=1000):
 
     np.random.seed(0)
     # simple lag test
-    seq = np.random.randn(n_steps, n_seq * n_batches, n_in)
+    seq = np.random.randn(n_steps, n_seq * n_batches, n_in).astype(theano.config.floatX)
     targets = np.zeros((n_steps, n_seq * n_batches, n_out))
 
-    targets[1:, :, 0] = seq[:-1, :, 3]  # delayed 1
-    targets[1:, :, 1] = seq[:-1, :, 2]  # delayed 1
-    targets[2:, :, 2] = seq[:-2, :, 0]  # delayed 2
+    delay = [1,1,2]
+    targets[delay[0]:, :, 0] = seq[:-delay[0], :, 3]  # delayed 1
+    targets[delay[1]:, :, 1] = seq[:-delay[1], :, 2]  # delayed 1
+    targets[delay[2]:, :, 2] = seq[:-delay[2], :, 0]  # delayed 2
 
     targets += 0.01 * np.random.standard_normal(targets.shape)
 
@@ -809,7 +809,6 @@ def test_real(n_epochs=1000):
 
     model.fit(seq, targets, validate_every=100, optimizer='bfgs')
 
-    plt.close('all')
     fig = plt.figure()
     ax1 = plt.subplot(211)
     plt.plot(seq[:, 0, :])
@@ -822,8 +821,12 @@ def test_real(n_epochs=1000):
     guessed_targets = plt.plot(guess.squeeze(), linestyle='--')
     for i, x in enumerate(guessed_targets):
         x.set_color(true_targets[i].get_color())
+        x.set_label('delayed %d' % delay[i])
     ax2.set_title('solid: true output, dashed: model output')
+    ax2.legend(fontsize=10,framealpha=0.5)
 
+    plt.tight_layout()
+    plt.savefig('result.png')
 
 def test_binary(multiple_out=False, n_epochs=1000, optimizer='cg'):
     """ Test RNN with binary outputs. """
@@ -861,7 +864,6 @@ def test_binary(multiple_out=False, n_epochs=1000, optimizer='cg'):
 
     seqs = xrange(10)
 
-    plt.close('all')
     for seq_num in seqs:
         fig = plt.figure()
         ax1 = plt.subplot(211)
@@ -916,7 +918,6 @@ def test_softmax(n_epochs=250, optimizer='cg'):
 
     seqs = xrange(10)
 
-    plt.close('all')
     for seq_num in seqs:
         fig = plt.figure()
         ax1 = plt.subplot(211)
