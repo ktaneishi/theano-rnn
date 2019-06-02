@@ -5,7 +5,7 @@
 import numpy, sys
 import theano
 import theano.tensor as T
-import cPickle
+import pickle
 import os
 
 
@@ -14,7 +14,7 @@ def gauss_newton_product(cost, p, v, s):  # this computes the product Gv = J'HJv
   Jv = T.Rop(s, p, v)
   HJv = T.grad(T.sum(T.grad(cost, s)*Jv), s, consider_constant=[Jv], disconnected_inputs='ignore')
   Gv = T.grad(T.sum(HJv*s), p, consider_constant=[HJv, Jv], disconnected_inputs='ignore')
-  Gv = map(T.as_tensor_variable, Gv)  # for CudaNdarray
+  Gv = list(map(T.as_tensor_variable, Gv))  # for CudaNdarray
   return Gv
 
 
@@ -52,11 +52,11 @@ train :
 
     self.p = p
     self.shapes = [i.get_value().shape for i in p]
-    self.sizes = map(numpy.prod, self.shapes)
+    self.sizes = list(map(numpy.prod, self.shapes))
     self.positions = numpy.cumsum([0] + self.sizes)[:-1]
 
     g = T.grad(costs[0], p)
-    g = map(T.as_tensor_variable, g)  # for CudaNdarray
+    g = list(map(T.as_tensor_variable, g))  # for CudaNdarray
     self.f_gc = theano.function(inputs, g + costs, on_unused_input='ignore')  # during gradient computation
     self.f_cost = theano.function(inputs, costs, on_unused_input='ignore')  # for quick cost evaluation
 
@@ -118,7 +118,7 @@ train :
     backtracking = []
     backspaces = 0
 
-    for i in xrange(1, 1 + self.max_cg_iterations):
+    for i in range(1, 1 + self.max_cg_iterations):
       # adapted from http://www.cs.cmu.edu/~quake-papers/painless-conjugate-gradient.pdf (p.51)
       q = self.batch_Gv(d)
       dq = numpy.dot(d, q)
@@ -154,7 +154,7 @@ train :
       j = len(backtracking) - 1
       while j > 0 and backtracking[j-1][0] < backtracking[j][0]:
         j -= 1
-    print ' backtracked %i/%i' % (backtracking[j][2], i),
+    print(' backtracked %i/%i' % (backtracking[j][2], i), end=' ')
     sys.stdout.flush()
 
     return backtracking[j] + (i,)
@@ -223,15 +223,15 @@ train :
     first_iteration = 1
 
     if isinstance(save_progress, str) and os.path.isfile(save_progress):
-      save = cPickle.load(file(save_progress))
+      save = pickle.load(file(save_progress))
       self.cg_last_x, best, self.lambda_, first_iteration, init_p = save
       first_iteration += 1
       for i, j in zip(self.p, init_p): i.set_value(j)
-      print '* recovered saved model'
+      print('* recovered saved model')
     
     try:
-      for u in xrange(first_iteration, 1 + num_updates):
-        print 'update %i/%i,' % (u, num_updates),
+      for u in range(first_iteration, 1 + num_updates):
+        print('update %i/%i,' % (u, num_updates), end=' ')
         sys.stdout.flush()
 
         gradient = numpy.zeros(sum(self.sizes), dtype=theano.config.floatX)
@@ -241,8 +241,8 @@ train :
           gradient += self.list_to_flat(result[:len(self.p)]) / gradient_dataset.number_batches
           costs.append(result[len(self.p):])
 
-        print 'cost=', numpy.mean(costs, axis=0),
-        print 'lambda=%.5f,' % self.lambda_,
+        print('cost=', numpy.mean(costs, axis=0), end=' ')
+        print('lambda=%.5f,' % self.lambda_, end=' ')
         sys.stdout.flush()
 
         after_cost, flat_delta, backtracking, num_cg_iterations = self.cg(-gradient)
@@ -264,24 +264,24 @@ train :
             costs = numpy.mean([self.f_cost(*i) for i in validation.iterate()], axis=0)
           elif callable(validation):
             costs = validation()
-          print 'validation=', costs,
+          print('validation=', costs, end=' ')
           if costs[0] < best[1]:
             best = u, costs[0], [i.get_value().copy() for i in self.p]
-            print '*NEW BEST',
+            print('*NEW BEST', end=' ')
 
         if isinstance(save_progress, str):
           # do not save dataset states
           save = self.cg_last_x, best, self.lambda_, u, [i.get_value().copy() for i in self.p]
-          cPickle.dump(save, file(save_progress, 'wb'), cPickle.HIGHEST_PROTOCOL)
+          pickle.dump(save, file(save_progress, 'wb'), pickle.HIGHEST_PROTOCOL)
         
         if u - best[0] > patience:
-          print 'PATIENCE ELAPSED, BAILING OUT'
+          print('PATIENCE ELAPSED, BAILING OUT')
           break
         
-        print
+        print()
         sys.stdout.flush()
     except KeyboardInterrupt:
-      print 'Interrupted by user.'
+      print('Interrupted by user.')
     
     if best[2] is None:
       best[2] = [i.get_value().copy() for i in self.p]
@@ -312,12 +312,12 @@ class SequenceDataset:
     self.number_batches = number_batches
     self.items = []
 
-    for i_sequence in xrange(len(data[0])):
+    for i_sequence in range(len(data[0])):
       if batch_size is None:
-        self.items.append([data[i][i_sequence] for i in xrange(len(data))])
+        self.items.append([data[i][i_sequence] for i in range(len(data))])
       else:
-        for i_step in xrange(0, len(data[0][i_sequence]) - minimum_size + 1, batch_size):
-          self.items.append([data[i][i_sequence][i_step:i_step + batch_size] for i in xrange(len(data))])
+        for i_step in range(0, len(data[0][i_sequence]) - minimum_size + 1, batch_size):
+          self.items.append([data[i][i_sequence][i_step:i_step + batch_size] for i in range(len(data))])
           
     self.shuffle()
   
@@ -325,7 +325,7 @@ class SequenceDataset:
     numpy.random.shuffle(self.items)
 
   def iterate(self, update=True):
-    for b in xrange(self.number_batches):
+    for b in range(self.number_batches):
       yield self.items[(self.current_batch + b) % len(self.items)]
     if update: self.update()
 

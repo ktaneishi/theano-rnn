@@ -10,7 +10,7 @@ import logging
 import time
 import os
 import datetime
-import cPickle as pickle
+import pickle as pickle
 
 logger = logging.getLogger(__name__)
 
@@ -283,7 +283,7 @@ class MetaRNN(object):
         i = iter(weights)
 
         for param in self.rnn.params:
-            param.set_value(i.next())
+            param.set_value(next(i))
 
     def __setstate__(self, state):
         """ Set parameters from state sequence.
@@ -414,7 +414,7 @@ class MetaRNN(object):
 
         while (epoch < self.n_epochs):
             epoch = epoch + 1
-            for idx in xrange(n_train):
+            for idx in range(n_train):
                 effective_momentum = self.final_momentum \
                                if epoch > self.momentum_switchover \
                                else self.initial_momentum
@@ -428,12 +428,12 @@ class MetaRNN(object):
                 if iter % validation_frequency == 0:
                     # compute loss on training set
                     train_losses = [compute_train_error(i)
-                                    for i in xrange(n_train)]
+                                    for i in range(n_train)]
                     this_train_loss = np.mean(train_losses)
 
                     if self.interactive:
                         test_losses = [compute_test_error(i)
-                                        for i in xrange(n_test)]
+                                        for i in range(n_test)]
                         this_test_loss = np.mean(test_losses)
 
                         logger.info('epoch %i, seq %i/%i, tr loss %f '
@@ -526,7 +526,7 @@ def test_binary(multiple_out=False, n_epochs=250):
 
     model.fit(seq, targets, validation_frequency=1000)
 
-    seqs = xrange(10)
+    seqs = range(10)
 
     for seq_num in seqs:
         fig = plt.figure()
@@ -534,10 +534,10 @@ def test_binary(multiple_out=False, n_epochs=250):
         plt.plot(seq[seq_num])
         ax1.set_title('input')
         ax2 = plt.subplot(212)
-        true_targets = plt.step(xrange(n_steps), targets[seq_num], marker='o')
+        true_targets = plt.step(range(n_steps), targets[seq_num], marker='o')
 
         guess = model.predict_proba(seq[seq_num])
-        guessed_targets = plt.step(xrange(n_steps), guess)
+        guessed_targets = plt.step(range(n_steps), guess)
         plt.setp(guessed_targets, linestyle='--', marker='d')
         for i, x in enumerate(guessed_targets):
             x.set_color(true_targets[i].get_color())
@@ -579,7 +579,7 @@ def test_softmax(n_epochs=250):
 
     model.fit(seq, targets, validation_frequency=1000)
 
-    seqs = xrange(10)
+    seqs = range(10)
 
     for seq_num in seqs:
         fig = plt.figure()
@@ -589,7 +589,7 @@ def test_softmax(n_epochs=250):
         ax2 = plt.subplot(212)
 
         # blue line will represent true classes
-        true_targets = plt.step(xrange(n_steps), targets[seq_num], marker='o')
+        true_targets = plt.step(range(n_steps), targets[seq_num], marker='o')
 
         # show probabilities (in b/w) output by model
         guess = model.predict_proba(seq[seq_num])
@@ -605,4 +605,4 @@ if __name__ == "__main__":
     # problem takes more epochs to solve
     #test_binary(multiple_out=True, n_epochs=2400)
     #test_softmax(n_epochs=250)
-    print "Elapsed time: %f" % (time.time() - t0)
+    print("Elapsed time: %f" % (time.time() - t0))

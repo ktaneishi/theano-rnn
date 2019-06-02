@@ -11,7 +11,7 @@ import logging
 import time
 import os
 import datetime
-import cPickle as pickle
+import pickle as pickle
 
 logger = logging.getLogger(__name__)
 
@@ -538,7 +538,7 @@ class MetaRNN(BaseEstimator):
                                      if epoch > self.momentum_switchover \
                                      else self.initial_momentum
 
-                for minibatch_idx in xrange(n_train_batches):
+                for minibatch_idx in range(n_train_batches):
                     minibatch_avg_cost = train_model(minibatch_idx, n_train,
                                                      self.learning_rate,
                                                      effective_momentum)
@@ -550,33 +550,33 @@ class MetaRNN(BaseEstimator):
                     if iter % validation_frequency == 0:
                         # compute loss on training set
                         train_losses = [compute_train_error(i, n_train)
-                                        for i in xrange(n_train_batches)]
+                                        for i in range(n_train_batches)]
                         train_batch_sizes = [get_batch_size(i, n_train)
-                                             for i in xrange(n_train_batches)]
+                                             for i in range(n_train_batches)]
 
                         this_train_loss = np.average(train_losses,
                                                      weights=train_batch_sizes)
 
                         if compute_zero_one:
                             train_zero_one = [compute_train_zo(i, n_train)
-                                              for i in xrange(n_train_batches)]
+                                              for i in range(n_train_batches)]
 
                             this_train_zero_one = np.average(train_zero_one,
                                                     weights=train_batch_sizes)
 
                         if self.interactive:
                             test_losses = [compute_test_error(i, n_test)
-                                            for i in xrange(n_test_batches)]
+                                            for i in range(n_test_batches)]
 
                             test_batch_sizes = [get_batch_size(i, n_test)
-                                            for i in xrange(n_test_batches)]
+                                            for i in range(n_test_batches)]
 
                             this_test_loss = np.average(test_losses,
                                                     weights=test_batch_sizes)
 
                             if compute_zero_one:
                                 test_zero_one = [compute_test_zo(i, n_test)
-                                        for i in xrange(n_test_batches)]
+                                        for i in range(n_test_batches)]
 
                                 this_test_zero_one = np.average(test_zero_one,
                                         weights=test_batch_sizes)
@@ -652,9 +652,9 @@ class MetaRNN(BaseEstimator):
             def train_fn(theta_value):
                 self.rnn.theta.set_value(theta_value.astype(theano.config.floatX), borrow=True)
                 train_losses = [batch_cost(i, n_train)
-                                for i in xrange(n_train_batches)]
+                                for i in range(n_train_batches)]
                 train_batch_sizes = [get_batch_size(i, n_train)
-                                     for i in xrange(n_train_batches)]
+                                     for i in range(n_train_batches)]
                 return np.average(train_losses, weights=train_batch_sizes)
 
             # creates a function that computes the average gradient of cost
@@ -663,9 +663,9 @@ class MetaRNN(BaseEstimator):
                 self.rnn.theta.set_value(theta_value.astype(theano.config.floatX), borrow=True)
 
                 train_grads = [batch_grad(i, n_train)
-                                for i in xrange(n_train_batches)]
+                                for i in range(n_train_batches)]
                 train_batch_sizes = [get_batch_size(i, n_train)
-                                     for i in xrange(n_train_batches)]
+                                     for i in range(n_train_batches)]
 
                 return np.average(train_grads, weights=train_batch_sizes,
                                   axis=0)
@@ -677,33 +677,33 @@ class MetaRNN(BaseEstimator):
                     self.rnn.theta.set_value(theta_value.astype(theano.config.floatX), borrow=True)
                     # compute loss on training set
                     train_losses = [compute_train_error(i, n_train)
-                                    for i in xrange(n_train_batches)]
+                                    for i in range(n_train_batches)]
                     train_batch_sizes = [get_batch_size(i, n_train)
-                                         for i in xrange(n_train_batches)]
+                                         for i in range(n_train_batches)]
 
                     this_train_loss = np.average(train_losses,
                                                     weights=train_batch_sizes)
 
                     if compute_zero_one:
                         train_zero_one = [compute_train_zo(i, n_train)
-                                          for i in xrange(n_train_batches)]
+                                          for i in range(n_train_batches)]
 
                         this_train_zero_one = np.average(train_zero_one,
                                                 weights=train_batch_sizes)
 
                     if self.interactive:
                         test_losses = [compute_test_error(i, n_test)
-                                        for i in xrange(n_test_batches)]
+                                        for i in range(n_test_batches)]
 
                         test_batch_sizes = [get_batch_size(i, n_test)
-                                        for i in xrange(n_test_batches)]
+                                        for i in range(n_test_batches)]
 
                         this_test_loss = np.average(test_losses,
                                                     weights=test_batch_sizes)
 
                         if compute_zero_one:
                             test_zero_one = [compute_test_zo(i, n_test)
-                                              for i in xrange(n_test_batches)]
+                                              for i in range(n_test_batches)]
 
                             this_test_zero_one = np.average(test_zero_one,
                                                     weights=test_batch_sizes)
@@ -775,7 +775,7 @@ class MetaRNN(BaseEstimator):
 
             end_time = time.clock()
 
-            print "Optimization time: %f" % (end_time - start_time)
+            print("Optimization time: %f" % (end_time - start_time))
 
         else:
             raise NotImplementedError
@@ -862,7 +862,7 @@ def test_binary(multiple_out=False, n_epochs=1000, optimizer='cg'):
     model.fit(seq, targets, validate_every=100, compute_zero_one=True,
               optimizer=optimizer)
 
-    seqs = xrange(10)
+    seqs = range(10)
 
     for seq_num in seqs:
         fig = plt.figure()
@@ -870,11 +870,11 @@ def test_binary(multiple_out=False, n_epochs=1000, optimizer='cg'):
         plt.plot(seq[:, seq_num, :])
         ax1.set_title('input')
         ax2 = plt.subplot(212)
-        true_targets = plt.step(xrange(n_steps), targets[:, seq_num, :],
+        true_targets = plt.step(range(n_steps), targets[:, seq_num, :],
                                 marker='o')
 
         guess = model.predict_proba(seq[:, seq_num, :][:, np.newaxis, :])
-        guessed_targets = plt.step(xrange(n_steps), guess.squeeze())
+        guessed_targets = plt.step(range(n_steps), guess.squeeze())
         plt.setp(guessed_targets, linestyle='--', marker='d')
         for i, x in enumerate(guessed_targets):
             x.set_color(true_targets[i].get_color())
@@ -916,7 +916,7 @@ def test_softmax(n_epochs=250, optimizer='cg'):
     model.fit(seq, targets, validate_every=10, compute_zero_one=True,
               optimizer=optimizer)
 
-    seqs = xrange(10)
+    seqs = range(10)
 
     for seq_num in seqs:
         fig = plt.figure()
@@ -926,7 +926,7 @@ def test_softmax(n_epochs=250, optimizer='cg'):
         ax2 = plt.subplot(212)
 
         # blue line will represent true classes
-        true_targets = plt.step(xrange(n_steps), targets[:, seq_num],
+        true_targets = plt.step(range(n_steps), targets[:, seq_num],
                                 marker='o')
 
         # show probabilities (in b/w) output by model
@@ -942,4 +942,4 @@ if __name__ == "__main__":
     test_real(n_epochs=1000)
     #test_binary(optimizer='sgd', n_epochs=1000)
     #test_softmax(n_epochs=250, optimizer='sgd')
-    print "Elapsed time: %f" % (time.time() - t0)
+    print("Elapsed time: %f" % (time.time() - t0))

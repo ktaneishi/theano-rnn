@@ -117,7 +117,7 @@ def test_binary(multiple_out=False, n_updates=250):
     # seem to do a little worse than the default
     opt.train(gradient_dataset, cg_dataset, num_updates=n_updates)
 
-    seqs = xrange(10)
+    seqs = range(10)
 
     for seq_num in seqs:
         fig = plt.figure()
@@ -125,10 +125,10 @@ def test_binary(multiple_out=False, n_updates=250):
         plt.plot(seq[seq_num])
         ax1.set_title('input')
         ax2 = plt.subplot(212)
-        true_targets = plt.step(xrange(n_steps), targets[seq_num], marker='o')
+        true_targets = plt.step(range(n_steps), targets[seq_num], marker='o')
 
         guess = model.predict_proba(seq[seq_num])
-        guessed_targets = plt.step(xrange(n_steps), guess)
+        guessed_targets = plt.step(range(n_steps), guess)
         plt.setp(guessed_targets, linestyle='--', marker='d')
         for i, x in enumerate(guessed_targets):
             x.set_color(true_targets[i].get_color())
@@ -186,7 +186,7 @@ def test_softmax(n_updates=250):
     # seem to do a little worse than the default
     opt.train(gradient_dataset, cg_dataset, num_updates=n_updates)
 
-    seqs = xrange(10)
+    seqs = range(10)
 
     for seq_num in seqs:
         fig = plt.figure()
@@ -196,7 +196,7 @@ def test_softmax(n_updates=250):
 
         ax2 = plt.subplot(212)
         # blue line will represent true classes
-        true_targets = plt.step(xrange(n_steps), targets[seq_num], marker='o')
+        true_targets = plt.step(range(n_steps), targets[seq_num], marker='o')
 
         # show probabilities (in b/w) output by model
         guess = model.predict_proba(seq[seq_num])
