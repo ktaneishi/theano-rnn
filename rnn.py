@@ -1,19 +1,15 @@
-""" Vanilla RNN
-
+''' Vanilla RNN
 @author Graham Taylor
-"""
+'''
 import numpy as np
 import theano
 import theano.tensor as T
 from base import BaseEstimator # from sklearn
-import logging
-import time
+import timeit
 import os
 import datetime
+from collections import OrderedDict
 import pickle as pickle
-
-logger = logging.getLogger(__name__)
-
 import matplotlib.pyplot as plt
 
 mode = theano.Mode(linker='cvm')
@@ -21,13 +17,13 @@ mode = theano.Mode(linker='cvm')
 
 
 class RNN(object):
-    """    Recurrent neural network class
+    '''    Recurrent neural network class
 
     Supported output types:
     real : linear output units, use mean-squared error
     binary : binary output units, use cross-entropy error
     softmax : single softmax out, use cross-entropy error
-    """
+    '''
     def __init__(self, input, n_in, n_hidden, n_out, activation=T.tanh,
                  output_type='real', use_symbolic_softmax=False):
 
@@ -77,7 +73,7 @@ class RNN(object):
                        self.bh, self.by]
 
         # for every parameter, we maintain it's last update
-        # the idea here is to use "momentum"
+        # the idea here is to use 'momentum'
         # keep moving mostly in the same direction
         self.updates = {}
         for param in self.params:
@@ -154,14 +150,14 @@ class RNN(object):
         return -T.mean(T.log(self.p_y_given_x)[T.arange(y.shape[0]), y])
 
     def errors(self, y):
-        """Return a float representing the number of errors in the sequence
+        '''Return a float representing the number of errors in the sequence
         over the total number of examples in the sequence ; zero one
         loss over the size of the sequence
 
         :type y: theano.tensor.TensorType
         :param y: corresponds to a vector that gives for each example the
                   correct label
-        """
+        '''
         # check if y has same dimension of y_pred
         if y.ndim != self.y_out.ndim:
             raise TypeError('y should have the same shape as self.y_out',
@@ -253,7 +249,7 @@ class MetaRNN(object):
             raise NotImplementedError
 
     def shared_dataset(self, data_xy):
-        """ Load the dataset into shared variables """
+        ''' Load the dataset into shared variables '''
 
         data_x, data_y = data_xy
         shared_x = theano.shared(np.asarray(data_x,
@@ -268,36 +264,34 @@ class MetaRNN(object):
             return shared_x, shared_y
 
     def __getstate__(self):
-        """ Return state sequence."""
+        ''' Return state sequence.'''
         params = self._get_params()  # parameters set in constructor
         weights = [p.get_value() for p in self.rnn.params]
         state = (params, weights)
         return state
 
     def _set_weights(self, weights):
-        """ Set fittable parameters from weights sequence.
+        ''' Set fittable parameters from weights sequence.
 
         Parameters must be in the order defined by self.params:
             W, W_in, W_out, h0, bh, by
-        """
-        i = iter(weights)
-
+        '''
         for param in self.rnn.params:
-            param.set_value(next(i))
+            param.set_value(next(weights))
 
     def __setstate__(self, state):
-        """ Set parameters from state sequence.
+        ''' Set parameters from state sequence.
 
         Parameters must be in the order defined by self.params:
             W, W_in, W_out, h0, bh, by
-        """
+        '''
         params, weights = state
         self.set_params(**params)
         self.ready()
         self._set_weights(weights)
 
     def save(self, fpath='.', fname=None):
-        """ Save a pickled representation of Model state. """
+        ''' Save a pickled representation of Model state. '''
         fpathstart, fpathext = os.path.splitext(fpath)
         if fpathext == '.pkl':
             # User supplied an absolute path to a pickle file
@@ -312,15 +306,15 @@ class MetaRNN(object):
 
         fabspath = os.path.join(fpath, fname)
 
-        logger.info("Saving to %s ..." % fabspath)
+        print('Saving to %s ...' % fabspath)
         file = open(fabspath, 'wb')
         state = self.__getstate__()
         pickle.dump(state, file, protocol=pickle.HIGHEST_PROTOCOL)
         file.close()
 
     def load(self, path):
-        """ Load model parameters from path. """
-        logger.info("Loading from %s ..." % path)
+        ''' Load model parameters from path. '''
+        print('Loading from %s ...' % path)
         file = open(path, 'rb')
         state = pickle.load(file)
         self.__setstate__(state)
@@ -328,7 +322,7 @@ class MetaRNN(object):
 
     def fit(self, X_train, Y_train, X_test=None, Y_test=None,
             validation_frequency=100):
-        """ Fit model
+        ''' Fit model
 
         Pass in X_test, Y_test to compute test error and report during
         training.
@@ -338,7 +332,7 @@ class MetaRNN(object):
 
         validation_frequency : int
             in terms of number of sequences (or number of weight updates)
-        """
+        '''
         if X_test is not None:
             assert(Y_test is not None)
             self.interactive = True
@@ -355,7 +349,7 @@ class MetaRNN(object):
         ######################
         # BUILD ACTUAL MODEL #
         ######################
-        logger.info('... building the model')
+        print('... building the model')
 
         index = T.lscalar('index')    # index to a case
         # learning rate (may change)
@@ -388,7 +382,7 @@ class MetaRNN(object):
             gparam = T.grad(cost, param)
             gparams.append(gparam)
 
-        updates = {}
+        updates = OrderedDict()
         for param, gparam in zip(self.rnn.params, gparams):
             weight_update = self.rnn.updates[param]
             upd = mom * weight_update - l_r * gparam
@@ -409,48 +403,45 @@ class MetaRNN(object):
         ###############
         # TRAIN MODEL #
         ###############
-        logger.info('... training')
+        print('... training')
         epoch = 0
 
         while (epoch < self.n_epochs):
             epoch = epoch + 1
+            start_time = timeit.default_timer()
             for idx in range(n_train):
                 effective_momentum = self.final_momentum \
                                if epoch > self.momentum_switchover \
                                else self.initial_momentum
-                example_cost = train_model(idx, self.learning_rate,
-                                           effective_momentum)
+                example_cost = train_model(idx, self.learning_rate, effective_momentum)
 
                 # iteration number (how many weight updates have we made?)
                 # epoch is 1-based, index is 0 based
-                iter = (epoch - 1) * n_train + idx + 1
+                iteration = (epoch - 1) * n_train + idx + 1
 
-                if iter % validation_frequency == 0:
+                if iteration % validation_frequency == 0:
                     # compute loss on training set
-                    train_losses = [compute_train_error(i)
-                                    for i in range(n_train)]
+                    train_losses = [compute_train_error(i) for i in range(n_train)]
                     this_train_loss = np.mean(train_losses)
 
                     if self.interactive:
-                        test_losses = [compute_test_error(i)
-                                        for i in range(n_test)]
+                        test_losses = [compute_test_error(i) for i in range(n_test)]
                         this_test_loss = np.mean(test_losses)
 
-                        logger.info('epoch %i, seq %i/%i, tr loss %f '
-                                    'te loss %f lr: %f' % \
-                        (epoch, idx + 1, n_train,
-                         this_train_loss, this_test_loss, self.learning_rate))
+                        print('epoch %03i, train loss %f test loss %f lr: %f' % \
+                                (epoch, this_train_loss, this_test_loss, self.learning_rate), end='')
                     else:
-                        logger.info('epoch %i, seq %i/%i, train loss %f '
-                                    'lr: %f' % \
-                                    (epoch, idx + 1, n_train, this_train_loss,
-                                     self.learning_rate))
+                        print('\repoch %03i, train loss %f lr: %f' % \
+                                (epoch, this_train_loss, self.learning_rate), end='')
+
+                    print(', %6.3f sec' % (timeit.default_timer() - start_time))
+                    start_time = timeit.default_timer()
 
             self.learning_rate *= self.learning_rate_decay
 
 
 def test_real():
-    """ Test RNN with real-valued outputs. """
+    ''' Test RNN with real-valued outputs. '''
     n_hidden = 10
     n_in = 5
     n_out = 3
@@ -477,11 +468,12 @@ def test_real():
     model.fit(seq, targets, validation_frequency=1000)
 
     fig = plt.figure()
-    ax1 = plt.subplot(211)
+    ax1 = plt.subplot(2, 1, 1)
+    plt.grid(True)
     plt.plot(seq[0])
     ax1.set_title('input')
 
-    ax2 = plt.subplot(212)
+    ax2 = plt.subplot(2, 1, 2)
     true_targets = plt.plot(targets[0])
 
     guess = model.predict(seq[0])
@@ -490,13 +482,14 @@ def test_real():
         x.set_color(true_targets[i].get_color())
         x.set_label('delayed %d' % delay[i])
     ax2.set_title('solid: true output, dashed: model output')
-    ax2.legend(fontsize=10,framealpha=0.5)
+    ax2.grid(True)
+    ax2.legend(fontsize=10, framealpha=0.5)
 
     plt.tight_layout()
-    plt.savefig('result.png')
+    plt.savefig('rnn.png')
 
 def test_binary(multiple_out=False, n_epochs=250):
-    """ Test RNN with binary outputs. """
+    ''' Test RNN with binary outputs. '''
     n_hidden = 10
     n_in = 5
     if multiple_out:
@@ -548,7 +541,7 @@ def test_binary(multiple_out=False, n_epochs=250):
 
 
 def test_softmax(n_epochs=250):
-    """ Test RNN with softmax outputs. """
+    ''' Test RNN with softmax outputs. '''
     n_hidden = 10
     n_in = 5
     n_steps = 10
@@ -583,10 +576,10 @@ def test_softmax(n_epochs=250):
 
     for seq_num in seqs:
         fig = plt.figure()
-        ax1 = plt.subplot(211)
+        ax1 = plt.subplot(2, 1, 1)
         plt.plot(seq[seq_num])
         ax1.set_title('input')
-        ax2 = plt.subplot(212)
+        ax2 = plt.subplot(2, 1, 2)
 
         # blue line will represent true classes
         true_targets = plt.step(range(n_steps), targets[seq_num], marker='o')
@@ -598,11 +591,8 @@ def test_softmax(n_epochs=250):
         ax2.set_title('blue: true class, grayscale: probs assigned by model')
 
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    t0 = time.time()
+if __name__ == '__main__':
     test_real()
     # problem takes more epochs to solve
     #test_binary(multiple_out=True, n_epochs=2400)
     #test_softmax(n_epochs=250)
-    print("Elapsed time: %f" % (time.time() - t0))
