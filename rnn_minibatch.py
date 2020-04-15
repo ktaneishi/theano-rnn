@@ -1,19 +1,18 @@
-""" Vanilla RNN
+'''
+Vanilla RNN
 Parallelizes scan over sequences by using mini-batches.
 
 @author Graham Taylor
-"""
+'''
 import numpy as np
 import theano
 import theano.tensor as T
 from base import BaseEstimator # from sklearn
-import logging
-import time
+import timeit
 import os
+from collections import OrderedDict
 import datetime
 import pickle as pickle
-
-logger = logging.getLogger(__name__)
 
 import matplotlib.pyplot as plt
 
@@ -22,14 +21,14 @@ mode = theano.Mode(linker='cvm')
 
 
 class RNN(object):
-    """    Recurrent neural network class
+    '''    Recurrent neural network class
 
     Supported output types:
     real : linear output units, use mean-squared error
     binary : binary output units, use cross-entropy error
     softmax : single softmax out, use cross-entropy error
 
-    """
+    '''
     def __init__(self, input, n_in, n_hidden, n_out, activation=T.tanh,
                  output_type='real'):
 
@@ -197,14 +196,14 @@ class RNN(object):
         return -T.mean(T.log(p_y_m)[T.arange(p_y_m.shape[0]), y_f])
 
     def errors(self, y):
-        """Return a float representing the number of errors in the minibatch
+        '''Return a float representing the number of errors in the minibatch
         over the total number of examples of the minibatch ; zero one
         loss over the size of the minibatch
 
         :type y: theano.tensor.TensorType
         :param y: corresponds to a vector that gives for each example the
                   correct label
-        """
+        '''
 
         # check if y has same dimension of y_pred
         if y.ndim != self.y_out.ndim:
@@ -298,7 +297,7 @@ class MetaRNN(BaseEstimator):
             raise NotImplementedError
 
     def shared_dataset(self, data_xy, borrow=True):
-        """ Load the dataset into shared variables """
+        ''' Load the dataset into shared variables '''
 
         data_x, data_y = data_xy
         shared_x = theano.shared(np.asarray(data_x,
@@ -315,27 +314,27 @@ class MetaRNN(BaseEstimator):
             return shared_x, shared_y
 
     def __getstate__(self):
-        """ Return state sequence."""
+        ''' Return state sequence.'''
         params = self._get_params()  # parameters set in constructor
         theta = self.rnn.theta.get_value()
         state = (params, theta)
         return state
 
     def _set_weights(self, theta):
-        """ Set fittable parameters from weights sequence.
-        """
+        ''' Set fittable parameters from weights sequence.
+        '''
         self.rnn.theta.set_value(theta)
 
     def __setstate__(self, state):
-        """ Set parameters from state sequence.
-        """
+        ''' Set parameters from state sequence.
+        '''
         params, theta = state
         self.set_params(**params)
         self.ready()
         self._set_weights(theta)
 
     def save(self, fpath='.', fname=None):
-        """ Save a pickled representation of Model state. """
+        ''' Save a pickled representation of Model state. '''
         fpathstart, fpathext = os.path.splitext(fpath)
         if fpathext == '.pkl':
             # User supplied an absolute path to a pickle file
@@ -350,28 +349,28 @@ class MetaRNN(BaseEstimator):
 
         fabspath = os.path.join(fpath, fname)
 
-        logger.info("Saving to %s ..." % fabspath)
+        print('Saving to %s ...' % fabspath)
         file = open(fabspath, 'wb')
         state = self.__getstate__()
         pickle.dump(state, file, protocol=pickle.HIGHEST_PROTOCOL)
         file.close()
 
     def load(self, path):
-        """ Load model parameters from path. """
-        logger.info("Loading from %s ..." % path)
+        ''' Load model parameters from path. '''
+        print('Loading from %s ...' % path)
         file = open(path, 'rb')
         state = pickle.load(file)
         self.__setstate__(state)
         file.close()
 
     def optional_output(self, train_set_x, show_norms=True, show_output=True):
-        """ Produces some debugging output. """
+        ''' Produces some debugging output. '''
         if show_norms:
             norm_output = []
             for param in self.rnn.params:
                 norm_output.append('%s: %6.4f' % (param.name,
                                                    self.get_norms[param]()))
-            logger.info("norms: {" + ', '.join(norm_output) + "}")
+            print('norms: {' + ', '.join(norm_output) + '}')
 
         if show_output:
             # show output for a single case
@@ -379,14 +378,14 @@ class MetaRNN(BaseEstimator):
                 output_fn = self.predict_proba
             else:
                 output_fn = self.predict
-            logger.info("sample output: " + \
+            print('sample output: ' + \
                     str(output_fn(train_set_x.get_value(
                         borrow=True)[:, 0, :][:, np.newaxis, :]).flatten()))
 
     def fit(self, X_train, Y_train, X_test=None, Y_test=None,
             validate_every=100, optimizer='sgd', compute_zero_one=False,
             show_norms=True, show_output=True):
-        """ Fit model
+        ''' Fit model
 
         Pass in X_test, Y_test to compute test error and report during
         training.
@@ -414,7 +413,7 @@ class MetaRNN(BaseEstimator):
             Show L2 norms of individual parameter groups while training.
         show_output : bool
             Show the model output on first training case while training.
-        """
+        '''
         if X_test is not None:
             assert(Y_test is not None)
             self.interactive = True
@@ -441,7 +440,7 @@ class MetaRNN(BaseEstimator):
         ######################
         # BUILD ACTUAL MODEL #
         ######################
-        logger.info('... building the model')
+        print('... building the model')
 
         index = T.lscalar('index')    # index to a [mini]batch
         n_ex = T.lscalar('n_ex')      # total number of examples
@@ -505,7 +504,7 @@ class MetaRNN(BaseEstimator):
 
         if optimizer == 'sgd':
 
-            updates = {}
+            updates = OrderedDict()
             theta = self.rnn.theta
             theta_update = self.rnn.theta_update
             # careful here, update to the shared variable
@@ -529,8 +528,9 @@ class MetaRNN(BaseEstimator):
             ###############
             # TRAIN MODEL #
             ###############
-            logger.info('... training')
+            print('... training')
             epoch = 0
+            start_time = timeit.default_timer()
 
             while (epoch < self.n_epochs):
                 epoch = epoch + 1
@@ -581,39 +581,45 @@ class MetaRNN(BaseEstimator):
                                 this_test_zero_one = np.average(test_zero_one,
                                         weights=test_batch_sizes)
 
+                            elapsed_time = timeit.default_timer() - start_time
+                            start_time = timeit.default_timer()
+
                             if compute_zero_one:
-                                logger.info('epoch %i, mb %i/%i, tr loss %f, '
+                                print('epoch %i, mb %i/%i, tr loss %f, '
                                             'tr zo %f, te loss %f '
-                                            'te zo %f lr: %f' % \
+                                            'te zo %f lr: %f time: %6.3f sec' % \
                                         (epoch, minibatch_idx + 1,
                                          n_train_batches,
                                          this_train_loss, this_train_zero_one,
                                          this_test_loss, this_test_zero_one,
-                                         self.learning_rate))
+                                         self.learning_rate, elapsed_time))
                             else:
-                                logger.info('epoch %i, mb %i/%i, tr loss %f '
-                                            'te loss %f lr: %f' % \
+                                print('epoch %i, mb %i/%i, tr loss %f '
+                                        'te loss %f lr: %f time: %6.3f' % \
                                 (epoch, minibatch_idx + 1, n_train_batches,
                                  this_train_loss, this_test_loss,
-                                 self.learning_rate))
+                                 self.learning_rate, elapsed_time))
 
                         else:
+                            elapsed_time = timeit.default_timer() - start_time
+                            start_time = timeit.default_timer()
+
                             if compute_zero_one:
-                                logger.info('epoch %i, mb %i/%i, train loss %f'
+                                print('epoch %i, mb %i/%i, train loss %f'
                                             ' train zo %f '
-                                            'lr: %f' % (epoch,
+                                            'lr: %f time: %6.3f sec' % (epoch,
                                                         minibatch_idx + 1,
                                                         n_train_batches,
                                                         this_train_loss,
                                                         this_train_zero_one,
-                                                        self.learning_rate))
+                                                        self.learning_rate, elapsed_time))
                             else:
-                                logger.info('epoch %i, mb %i/%i, train loss %f'
-                                            ' lr: %f' % (epoch,
+                                print('epoch %i, mb %i/%i, train loss %f'
+                                        ' lr: %f time: %6.3f sec' % (epoch,
                                                          minibatch_idx + 1,
                                                          n_train_batches,
                                                          this_train_loss,
-                                                         self.learning_rate))
+                                                         self.learning_rate, elapsed_time))
 
                         self.optional_output(train_set_x, show_norms,
                                              show_output)
@@ -630,6 +636,7 @@ class MetaRNN(BaseEstimator):
                         fabspath = os.path.join(self.snapshot_path, fname)
                         self.save(fpath=fabspath)
 
+
         elif optimizer == 'cg' or optimizer == 'bfgs' \
                  or optimizer == 'l_bfgs_b':
             # compile a theano function that returns the cost of a minibatch
@@ -637,7 +644,7 @@ class MetaRNN(BaseEstimator):
                 outputs=cost,
                 givens={self.x: train_set_x[:, batch_start:batch_stop],
                         self.y: train_set_y[:, batch_start:batch_stop]},
-                mode=mode, name="batch_cost")
+                mode=mode, name='batch_cost')
 
             # compile a theano function that returns the gradient of the
             # minibatch with respect to theta
@@ -645,7 +652,7 @@ class MetaRNN(BaseEstimator):
                 outputs=T.grad(cost, self.rnn.theta),
                 givens={self.x: train_set_x[:, batch_start:batch_stop],
                         self.y: train_set_y[:, batch_start:batch_stop]},
-                mode=mode, name="batch_grad")
+                mode=mode, name='batch_grad')
 
             # creates a function that computes the average cost on the training
             # set
@@ -709,25 +716,25 @@ class MetaRNN(BaseEstimator):
                                                     weights=test_batch_sizes)
 
                         if compute_zero_one:
-                            logger.info('epoch %i, tr loss %f, '
+                            print('epoch %i, tr loss %f, '
                                         'tr zo %f, te loss %f '
                                             'te zo %f' % \
                                         (self.epoch, this_train_loss,
                                          this_train_zero_one, this_test_loss,
                                          this_test_zero_one))
                         else:
-                            logger.info('epoch %i, tr loss %f, te loss %f' % \
+                            print('epoch %i, tr loss %f, te loss %f' % \
                                         (self.epoch, this_train_loss,
                                          this_test_loss, self.learning_rate))
 
                     else:
                         if compute_zero_one:
-                            logger.info('epoch %i, train loss %f'
+                            print('epoch %i, train loss %f'
                                         ', train zo %f ' % \
                                         (self.epoch, this_train_loss,
                                          this_train_zero_one))
                         else:
-                            logger.info('epoch %i, train loss %f ' % \
+                            print('epoch %i, train loss %f ' % \
                                         (self.epoch, this_train_loss))
 
                     self.optional_output(train_set_x, show_norms, show_output)
@@ -735,7 +742,7 @@ class MetaRNN(BaseEstimator):
             ###############
             # TRAIN MODEL #
             ###############
-            logger.info('... training')
+            print('... training')
             # using scipy conjugate gradient optimizer
             import scipy.optimize
             if optimizer == 'cg':
@@ -744,8 +751,7 @@ class MetaRNN(BaseEstimator):
                 of = scipy.optimize.fmin_bfgs
             elif optimizer == 'l_bfgs_b':
                 of = scipy.optimize.fmin_l_bfgs_b
-            logger.info("Optimizing using %s..." % of.__name__)
-            start_time = time.clock()
+            print('Optimizing using %s...' % of.__name__)
 
             # keep track of epochs externally
             # these get updated through callback
@@ -773,16 +779,12 @@ class MetaRNN(BaseEstimator):
                     iprint=validate_every,
                     maxfun=self.n_epochs)  # max number of feval
 
-            end_time = time.clock()
-
-            print("Optimization time: %f" % (end_time - start_time))
-
         else:
             raise NotImplementedError
 
 
 def test_real(n_epochs=1000):
-    """ Test RNN with real-valued outputs. """
+    ''' Test RNN with real-valued outputs. '''
     n_hidden = 10
     n_in = 5
     n_out = 3
@@ -807,13 +809,13 @@ def test_real(n_epochs=1000):
                     n_epochs=n_epochs, batch_size=n_seq, activation='tanh',
                     L2_reg=1e-3)
 
-    model.fit(seq, targets, validate_every=100, optimizer='bfgs')
+    model.fit(seq, targets, validate_every=100, optimizer='bfgs', show_output=True)
 
     fig = plt.figure()
-    ax1 = plt.subplot(211)
+    ax1 = plt.subplot(2, 1, 1)
     plt.plot(seq[:, 0, :])
     ax1.set_title('input')
-    ax2 = plt.subplot(212)
+    ax2 = plt.subplot(2, 1, 2)
     true_targets = plt.plot(targets[:, 0, :])
 
     guess = model.predict(seq[:, 0, :][:, np.newaxis, :])
@@ -826,10 +828,10 @@ def test_real(n_epochs=1000):
     ax2.legend(fontsize=10,framealpha=0.5)
 
     plt.tight_layout()
-    plt.savefig('result.png')
+    plt.savefig('doc/rnn_minibatch.png')
 
 def test_binary(multiple_out=False, n_epochs=1000, optimizer='cg'):
-    """ Test RNN with binary outputs. """
+    ''' Test RNN with binary outputs. '''
     n_hidden = 10
     n_in = 5
     if multiple_out:
@@ -883,7 +885,7 @@ def test_binary(multiple_out=False, n_epochs=1000, optimizer='cg'):
 
 
 def test_softmax(n_epochs=250, optimizer='cg'):
-    """ Test RNN with softmax outputs. """
+    ''' Test RNN with softmax outputs. '''
     n_hidden = 10
     n_in = 5
     n_steps = 10
@@ -920,10 +922,10 @@ def test_softmax(n_epochs=250, optimizer='cg'):
 
     for seq_num in seqs:
         fig = plt.figure()
-        ax1 = plt.subplot(211)
+        ax1 = plt.subplot(2, 1, 1)
         plt.plot(seq[:, seq_num])
         ax1.set_title('input')
-        ax2 = plt.subplot(212)
+        ax2 = plt.subplot(2, 1, 2)
 
         # blue line will represent true classes
         true_targets = plt.step(range(n_steps), targets[:, seq_num],
@@ -936,10 +938,7 @@ def test_softmax(n_epochs=250, optimizer='cg'):
         ax2.set_title('blue: true class, grayscale: probs assigned by model')
 
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    t0 = time.time()
+if __name__ == '__main__':
     test_real(n_epochs=1000)
-    #test_binary(optimizer='sgd', n_epochs=1000)
+    #test_binary(n_epochs=1000, optimizer='sgd')
     #test_softmax(n_epochs=250, optimizer='sgd')
-    print("Elapsed time: %f" % (time.time() - t0))

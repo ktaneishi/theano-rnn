@@ -486,7 +486,7 @@ def test_real():
     ax2.legend(fontsize=10, framealpha=0.5)
 
     plt.tight_layout()
-    plt.savefig('rnn.png')
+    plt.savefig('doc/rnn.png')
 
 def test_binary(multiple_out=False, n_epochs=250):
     ''' Test RNN with binary outputs. '''
