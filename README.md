@@ -31,6 +31,8 @@ training it with stochastic gradient descent, it trains it with
 
 <img src="doc/rnn.png" alt="rnn" width="400" />
 
+<img src="doc/rnn_minibatch.png" alt="rnn_minibatch" width="400" />
+
 ## Other implementations
 
 There are other Theano rnn implementations publicly available, for example:
