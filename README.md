@@ -29,7 +29,7 @@ training it with stochastic gradient descent, it trains it with
 
 ## Figures
 
-<img src="rnn.png" alt="rnn" width="400" />
+<img src="doc/rnn.png" alt="rnn" width="400" />
 
 ## Other implementations
 

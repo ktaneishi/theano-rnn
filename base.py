@@ -1,4 +1,4 @@
-"""Base classes for all estimators."""
+'''Base classes for all estimators.'''
 # Author: Gael Varoquaux <gael.varoquaux@normalesup.org>
 # License: BSD 3 clause
 
@@ -13,7 +13,7 @@ import six # from sklearn.externals
 
 ###############################################################################
 def clone(estimator, safe=True):
-    """Constructs a new estimator with the same parameters.
+    '''Constructs a new estimator with the same parameters.
 
     Clone does a deep copy of the model in an estimator
     without actually copying attached data. It yields a new estimator
@@ -28,7 +28,7 @@ def clone(estimator, safe=True):
         If safe is false, clone will fall back to a deepcopy on objects
         that are not estimators.
 
-    """
+    '''
     estimator_type = type(estimator)
     # XXX: not handling dictionaries
     if estimator_type in (list, tuple, set, frozenset):
@@ -37,9 +37,9 @@ def clone(estimator, safe=True):
         if not safe:
             return copy.deepcopy(estimator)
         else:
-            raise TypeError("Cannot clone object '%s' (type %s): "
-                            "it does not seem to be a scikit-learn estimator "
-                            "it does not implement a 'get_params' methods."
+            raise TypeError('Cannot clone object `%s` (type %s): '
+                            'it does not seem to be a scikit-learn estimator '
+                            'it does not implement a `get_params` methods.'
                             % (repr(estimator), type(estimator)))
     klass = estimator.__class__
     new_object_params = estimator.get_params(deep=False)
@@ -100,7 +100,7 @@ def clone(estimator, safe=True):
 
 ###############################################################################
 def _pprint(params, offset=0, printer=repr):
-    """Pretty print the dictionary 'params'
+    '''Pretty print the dictionary 'params'
 
     Parameters
     ----------
@@ -114,7 +114,7 @@ def _pprint(params, offset=0, printer=repr):
         The function to convert entries to strings, typically
         the builtin str or repr
 
-    """
+    '''
     # Do a multi-line justified repr:
     options = np.get_printoptions()
     np.set_printoptions(precision=5, threshold=64, edgeitems=2)
@@ -151,18 +151,18 @@ def _pprint(params, offset=0, printer=repr):
 
 ###############################################################################
 class BaseEstimator(object):
-    """Base class for all estimators in scikit-learn
+    '''Base class for all estimators in scikit-learn
 
     Notes
     -----
     All estimators should specify all the parameters that can be set
     at the class level in their ``__init__`` as explicit keyword
     arguments (no ``*args`` or ``**kwargs``).
-    """
+    '''
 
     @classmethod
     def _get_param_names(cls):
-        """Get parameter names for the estimator"""
+        '''Get parameter names for the estimator'''
         # fetch the constructor or the original constructor before
         # deprecation wrapping if any
         init = getattr(cls.__init__, 'deprecated_original', cls.__init__)
@@ -174,10 +174,10 @@ class BaseEstimator(object):
         # to represent
         args, varargs, kw, default = inspect.getargspec(init)
         if varargs is not None:
-            raise RuntimeError("scikit-learn estimators should always "
-                               "specify their parameters in the signature"
-                               " of their __init__ (no varargs)."
-                               " %s doesn't follow this convention."
+            raise RuntimeError('''scikit-learn estimators should always '''
+                               '''specify their parameters in the signature'''
+                               ''' of their __init__ (no varargs).'''
+                               ''' %s doesn't follow this convention.'''
                                % (cls, ))
         # Remove 'self'
         # XXX: This is going to fail if the init is a staticmethod, but
@@ -187,7 +187,7 @@ class BaseEstimator(object):
         return args
 
     def get_params(self, deep=True):
-        """Get parameters for this estimator.
+        '''Get parameters for this estimator.
 
         Parameters
         ----------
@@ -199,14 +199,14 @@ class BaseEstimator(object):
         -------
         params : mapping of string to any
             Parameter names mapped to their values.
-        """
+        '''
         out = dict()
         for key in self._get_param_names():
             # We need deprecation warnings to always be on in order to
             # catch deprecated param values.
             # This is set in utils/__init__.py but it gets overwritten
             # when running under python3 somehow.
-            warnings.simplefilter("always", DeprecationWarning)
+            warnings.simplefilter('always', DeprecationWarning)
             try:
                 with warnings.catch_warnings(record=True) as w:
                     value = getattr(self, key, None)
@@ -224,7 +224,7 @@ class BaseEstimator(object):
         return out
 
     def set_params(self, **params):
-        """Set the parameters of this estimator.
+        '''Set the parameters of this estimator.
 
         The method works on simple estimators as well as on nested objects
         (such as pipelines). The former have parameters of the form
@@ -234,7 +234,7 @@ class BaseEstimator(object):
         Returns
         -------
         self
-        """
+        '''
         if not params:
             # Simple optimisation to gain speed (inspect is slow)
             return self
@@ -265,10 +265,10 @@ class BaseEstimator(object):
 
 ###############################################################################
 class ClassifierMixin(object):
-    """Mixin class for all classifiers in scikit-learn."""
+    '''Mixin class for all classifiers in scikit-learn.'''
 
     def score(self, X, y, sample_weight=None):
-        """Returns the mean accuracy on the given test data and labels.
+        '''Returns the mean accuracy on the given test data and labels.
 
         In multi-label classification, this is the subset accuracy
         which is a harsh metric since you require for each sample that
@@ -290,17 +290,17 @@ class ClassifierMixin(object):
         score : float
             Mean accuracy of self.predict(X) wrt. y.
 
-        """
+        '''
         from .metrics import accuracy_score
         return accuracy_score(y, self.predict(X), sample_weight=sample_weight)
 
 
 ###############################################################################
 class RegressorMixin(object):
-    """Mixin class for all regression estimators in scikit-learn."""
+    '''Mixin class for all regression estimators in scikit-learn.'''
 
     def score(self, X, y, sample_weight=None):
-        """Returns the coefficient of determination R^2 of the prediction.
+        '''Returns the coefficient of determination R^2 of the prediction.
 
         The coefficient R^2 is defined as (1 - u/v), where u is the regression
         sum of squares ((y_true - y_pred) ** 2).sum() and v is the residual
@@ -322,7 +322,7 @@ class RegressorMixin(object):
         -------
         score : float
             R^2 of self.predict(X) wrt. y.
-        """
+        '''
 
         from .metrics import r2_score
         return r2_score(y, self.predict(X), sample_weight=sample_weight)
@@ -330,9 +330,9 @@ class RegressorMixin(object):
 
 ###############################################################################
 class ClusterMixin(object):
-    """Mixin class for all cluster estimators in scikit-learn."""
+    '''Mixin class for all cluster estimators in scikit-learn.'''
     def fit_predict(self, X, y=None):
-        """Performs clustering on X and returns cluster labels.
+        '''Performs clustering on X and returns cluster labels.
 
         Parameters
         ----------
@@ -343,7 +343,7 @@ class ClusterMixin(object):
         -------
         y : ndarray, shape (n_samples,)
             cluster labels
-        """
+        '''
         # non-optimized default implementation; override when a better
         # method is possible for a given clustering algorithm
         self.fit(X)
@@ -351,18 +351,18 @@ class ClusterMixin(object):
 
 
 class BiclusterMixin(object):
-    """Mixin class for all bicluster estimators in scikit-learn"""
+    '''Mixin class for all bicluster estimators in scikit-learn'''
 
     @property
     def biclusters_(self):
-        """Convenient way to get row and column indicators together.
+        '''Convenient way to get row and column indicators together.
 
         Returns the ``rows_`` and ``columns_`` members.
-        """
+        '''
         return self.rows_, self.columns_
 
     def get_indices(self, i):
-        """Row and column indices of the i'th bicluster.
+        '''Row and column indices of the i'th bicluster.
 
         Only works if ``rows_`` and ``columns_`` attributes exist.
 
@@ -373,38 +373,38 @@ class BiclusterMixin(object):
         col_ind : np.array, dtype=np.intp
             Indices of columns in the dataset that belong to the bicluster.
 
-        """
+        '''
         from .cluster.bicluster.utils import get_indices
         return get_indices(self.rows_[i], self.columns_[i])
 
     def get_shape(self, i):
-        """Shape of the i'th bicluster.
+        '''Shape of the i'th bicluster.
 
         Returns
         -------
         shape : (int, int)
             Number of rows and columns (resp.) in the bicluster.
-        """
+        '''
         from .cluster.bicluster.utils import get_shape
         return get_shape(self.rows_[i], self.columns_[i])
 
     def get_submatrix(self, i, data):
-        """Returns the submatrix corresponding to bicluster `i`.
+        '''Returns the submatrix corresponding to bicluster `i`.
 
         Works with sparse matrices. Only works if ``rows_`` and
         ``columns_`` attributes exist.
 
-        """
+        '''
         from .cluster.bicluster.utils import get_submatrix
         return get_submatrix(self.rows_[i], self.columns_[i], data)
 
 
 ###############################################################################
 class TransformerMixin(object):
-    """Mixin class for all transformers in scikit-learn."""
+    '''Mixin class for all transformers in scikit-learn.'''
 
     def fit_transform(self, X, y=None, **fit_params):
-        """Fit to data, then transform it.
+        '''Fit to data, then transform it.
 
         Fits transformer to X and y with optional parameters fit_params
         and returns a transformed version of X.
@@ -422,7 +422,7 @@ class TransformerMixin(object):
         X_new : numpy array of shape [n_samples, n_features_new]
             Transformed array.
 
-        """
+        '''
         # non-optimized default implementation; override when a better
         # method is possible for a given clustering algorithm
         if y is None:
@@ -435,7 +435,7 @@ class TransformerMixin(object):
 
 ###############################################################################
 class MetaEstimatorMixin(object):
-    """Mixin class for all meta estimators in scikit-learn."""
+    '''Mixin class for all meta estimators in scikit-learn.'''
     # this is just a tag for the moment
 
 
@@ -443,7 +443,7 @@ class MetaEstimatorMixin(object):
 # XXX: Temporary solution to figure out if an estimator is a classifier
 
 def _get_sub_estimator(estimator):
-    """Returns the final estimator if there is any."""
+    '''Returns the final estimator if there is any.'''
     if hasattr(estimator, 'estimator'):
         # GridSearchCV and other CV-tuned estimators
         return _get_sub_estimator(estimator.estimator)
@@ -454,6 +454,6 @@ def _get_sub_estimator(estimator):
 
 
 def is_classifier(estimator):
-    """Returns True if the given estimator is (probably) a classifier."""
+    '''Returns True if the given estimator is (probably) a classifier.'''
     estimator = _get_sub_estimator(estimator)
     return isinstance(estimator, ClassifierMixin)
