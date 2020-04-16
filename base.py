@@ -37,9 +37,9 @@ def clone(estimator, safe=True):
         if not safe:
             return copy.deepcopy(estimator)
         else:
-            raise TypeError('Cannot clone object `%s` (type %s): '
-                            'it does not seem to be a scikit-learn estimator '
-                            'it does not implement a `get_params` methods.'
+            raise TypeError('''Cannot clone object '%s' (type %s): '''
+                            '''it does not seem to be a scikit-learn estimator '''
+                            '''it does not implement a 'get_params' methods.'''
                             % (repr(estimator), type(estimator)))
     klass = estimator.__class__
     new_object_params = estimator.get_params(deep=False)
@@ -91,8 +91,8 @@ def clone(estimator, safe=True):
         else:
             equality_test = new_object_params[name] == params_set[name]
         if not equality_test:
-            raise RuntimeError('Cannot clone object %s, as the constructor '
-                               'does not seem to set parameter %s' %
+            raise RuntimeError('''Cannot clone object %s, as the constructor '''
+                               '''does not seem to set parameter %s''' %
                                (estimator, name))
 
     return new_object
