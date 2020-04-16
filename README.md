@@ -1,4 +1,4 @@
-# Demonstration of Recurrent Neural Network implemented with Theano
+# Demonstration of Recurrent Neural Network in Theano
 
 ## Dependencies
 
