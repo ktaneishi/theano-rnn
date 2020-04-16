@@ -814,7 +814,9 @@ def test_real(n_epochs=1000):
     fig = plt.figure()
     ax1 = plt.subplot(2, 1, 1)
     plt.plot(seq[:, 0, :])
+    plt.grid(True)
     ax1.set_title('input')
+
     ax2 = plt.subplot(2, 1, 2)
     true_targets = plt.plot(targets[:, 0, :])
 
@@ -827,6 +829,7 @@ def test_real(n_epochs=1000):
     ax2.set_title('solid: true output, dashed: model output')
     ax2.legend(fontsize=10,framealpha=0.5)
 
+    plt.grid(True)
     plt.tight_layout()
     plt.savefig('doc/rnn_minibatch.png')
 
